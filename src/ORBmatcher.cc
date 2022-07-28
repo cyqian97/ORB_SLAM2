@@ -1326,7 +1326,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
 }
 
 int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, const float th, const bool bMono)
-{
+{    
     int nmatches = 0;
 
     // Rotation Histogram (to check rotation consistency)
