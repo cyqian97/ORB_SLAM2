@@ -290,7 +290,7 @@ cv::Mat Tracking::GrabImageMonocularKeyframeInitialization(const cv::Mat &im, co
     else
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
 
-    Track();
+    TrackKeyframeInitialization(im_name);
 
     return mCurrentFrame.mTcw.clone();
 }
@@ -537,7 +537,7 @@ void Tracking::Track()
 
 }
 
-void Tracking::TrackKeyframeInitialization()
+void Tracking::TrackKeyframeInitialization(string im_name)
 {
     if(mState==NO_IMAGES_YET)
     {
@@ -554,8 +554,8 @@ void Tracking::TrackKeyframeInitialization()
         if(mSensor==System::STEREO || mSensor==System::RGBD)
             StereoInitialization();
         else
-            MonocularInitialization();
-
+            // std::cout << "Initializing: " << im_name << std::endl;
+            MonocularInitializationKeyframeInitialization(im_name);
         mpFrameDrawer->Update(this);
 
         if(mState!=OK)
@@ -728,8 +728,12 @@ void Tracking::TrackKeyframeInitialization()
 
             // Check if we need to insert a new keyframe
             if(NeedNewKeyFrame())
-                
+            {
                 CreateNewKeyFrame();
+                // std::cout << "New Keyframe: " << im_name << std::endl;
+                // mpSystem->Reset();
+                // return;
+            }
                 
 
             // We allow points with high innovation (considererd outliers by the Huber Function)
@@ -909,6 +913,85 @@ void Tracking::MonocularInitialization()
     }
 }
 
+void Tracking::MonocularInitializationKeyframeInitialization(string im_name)
+{
+
+    if(!mpInitializer)
+    {
+        std::cout << "Set Reference Frame: " << im_name << std::endl;
+        // Set Reference Frame
+        if(mCurrentFrame.mvKeys.size()>100)
+        {
+            mInitialFrame = Frame(mCurrentFrame);
+            mLastFrame = Frame(mCurrentFrame);
+            mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
+            for(size_t i=0; i<mCurrentFrame.mvKeysUn.size(); i++)
+                mvbPrevMatched[i]=mCurrentFrame.mvKeysUn[i].pt;
+
+            if(mpInitializer)
+                delete mpInitializer;
+
+            mpInitializer =  new Initializer(mCurrentFrame,1.0,200);
+
+            fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
+
+            return;
+        }
+    }
+    else
+    {
+        // std::cout << "Try to initialize: " << im_name << std::endl;
+        // Try to initialize
+        if((int)mCurrentFrame.mvKeys.size()<=100)
+        {
+            delete mpInitializer;
+            mpInitializer = static_cast<Initializer*>(NULL);
+            fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
+            return;
+        }
+
+        // Find correspondences
+        ORBmatcher matcher(0.9,true);
+        int nmatches = matcher.SearchForInitialization(mInitialFrame,mCurrentFrame,mvbPrevMatched,mvIniMatches,100);
+
+        // Check if there are enough correspondences
+        if(nmatches<100)
+        {
+            delete mpInitializer;
+            mpInitializer = static_cast<Initializer*>(NULL);
+            return;
+        }
+
+        cv::Mat Rcw; // Current Camera Rotation
+        cv::Mat tcw; // Current Camera Translation
+        vector<bool> vbTriangulated; // Triangulated Correspondences (mvIniMatches)
+
+        if(mpInitializer->InitializeKeyframeInitialization(mCurrentFrame, mvIniMatches, Rcw, tcw, mvIniP3D, vbTriangulated))
+        {
+            for(size_t i=0, iend=mvIniMatches.size(); i<iend;i++)
+            {
+                if(mvIniMatches[i]>=0 && !vbTriangulated[i])
+                {
+                    mvIniMatches[i]=-1;
+                    nmatches--;
+                }
+            }
+
+            // Set Frame Poses
+            mInitialFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+            cv::Mat Tcw = cv::Mat::eye(4,4,CV_32F);
+            Rcw.copyTo(Tcw.rowRange(0,3).colRange(0,3));
+            tcw.copyTo(Tcw.rowRange(0,3).col(3));
+            mCurrentFrame.SetPose(Tcw);
+
+            CreateInitialMapMonocular();
+
+            std::cout << "New Keyframe: " << im_name << std::endl;
+            mpSystem->Reset();
+        }
+    }
+}
+
 void Tracking::CreateInitialMapMonocular()
 {
     // Create KeyFrames
@@ -1008,6 +1091,7 @@ void Tracking::CreateInitialMapMonocular()
 
     mpMap->mvpKeyFrameOrigins.push_back(pKFini);
 
+    std::cout << "mState set to OK" << std::endl;
     mState=OK;
 }
 

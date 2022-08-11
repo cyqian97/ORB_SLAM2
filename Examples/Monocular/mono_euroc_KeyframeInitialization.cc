@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
+        std::cout << "Main loop ni: " << ni << std::endl;
         SLAM.TrackMonocularKeyframeInitialization(im,tframe,vstrImageFilenames[ni]);
 
 #ifdef COMPILEDWITHC11

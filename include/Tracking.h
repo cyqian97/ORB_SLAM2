@@ -122,13 +122,14 @@ protected:
     void Track();
 
     // Extract keyframe pairs using only initialization stage
-    void TrackKeyframeInitialization();
+    void TrackKeyframeInitialization(string im_name);
 
     // Map initialization for stereo and RGB-D
     void StereoInitialization();
 
     // Map initialization for monocular
     void MonocularInitialization();
+    void MonocularInitializationKeyframeInitialization(string im_name);
     void CreateInitialMapMonocular();
 
     void CheckReplacedInLastFrame();
