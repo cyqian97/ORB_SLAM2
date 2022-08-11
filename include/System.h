@@ -77,6 +77,9 @@ public:
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
+    // Extract keyframe pairs using only initialization stage
+    cv::Mat TrackMonocularKeyframeInitialization(const cv::Mat &im, const double &timestamp, string im_name);
+
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
     // This resumes local mapping thread and performs SLAM again.
