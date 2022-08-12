@@ -114,22 +114,29 @@ int main(int argc, char **argv)
             usleep((T-ttrack)*1e6);
     }
 
+
+    // Keyframe pairs from initialization only.
+    ofstream file("Keyframe-Pairs.txt");
+    file << SLAM.write_KeyframeInitialization();
+    file.close();
+
     // Stop all threads
     SLAM.Shutdown();
 
-    // Tracking time statistics
-    sort(vTimesTrack.begin(),vTimesTrack.end());
-    float totaltime = 0;
-    for(int ni=0; ni<nImages; ni++)
-    {
-        totaltime+=vTimesTrack[ni];
-    }
-    cout << "-------" << endl << endl;
-    cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
-    cout << "mean tracking time: " << totaltime/nImages << endl;
 
-    // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    // // Tracking time statistics
+    // sort(vTimesTrack.begin(),vTimesTrack.end());
+    // float totaltime = 0;
+    // for(int ni=0; ni<nImages; ni++)
+    // {
+    //     totaltime+=vTimesTrack[ni];
+    // }
+    // cout << "-------" << endl << endl;
+    // cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
+    // cout << "mean tracking time: " << totaltime/nImages << endl;
+
+    // // Save camera trajectory
+    // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
 
     return 0;
 }

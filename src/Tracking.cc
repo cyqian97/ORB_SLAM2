@@ -918,8 +918,9 @@ void Tracking::MonocularInitializationKeyframeInitialization(string im_name)
 
     if(!mpInitializer)
     {
-        std::cout << "Set Reference Frame: " << im_name << std::endl;
         // Set Reference Frame
+        // std::cout << "Set Reference Frame: " << im_name << std::endl;
+        mpSystem->add_First_KeyframeInitialization(im_name);
         if(mCurrentFrame.mvKeys.size()>100)
         {
             mInitialFrame = Frame(mCurrentFrame);
@@ -986,7 +987,9 @@ void Tracking::MonocularInitializationKeyframeInitialization(string im_name)
 
             CreateInitialMapMonocular();
 
-            std::cout << "New Keyframe: " << im_name << std::endl;
+            // std::cout << "New Keyframe: " << im_name << std::endl;
+
+            mpSystem->add_Second_KeyframeInitialization(im_name);
             mpSystem->Reset();
         }
     }

@@ -125,6 +125,11 @@ public:
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
+    // Keyframe pairs from initialization only.
+    void add_First_KeyframeInitialization(string s){keyframe_pair_first = s + "\t";};
+    void add_Second_KeyframeInitialization(string s){keyframe_pair_names.append(keyframe_pair_first + s + "\n");};
+    string write_KeyframeInitialization(){return keyframe_pair_names;};
+
 private:
 
     // Input sensor
@@ -178,8 +183,9 @@ private:
     std::vector<cv::KeyPoint> mTrackedKeyPointsUn;
     std::mutex mMutexState;
 
-    // Keyframe pairs from initialization only
-    // std::vector<
+    // Keyframe pairs from initialization only.
+    string keyframe_pair_first;
+    string keyframe_pair_names;
 };
 
 }// namespace ORB_SLAM
