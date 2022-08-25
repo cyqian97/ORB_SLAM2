@@ -23,39 +23,34 @@
 #include<algorithm>
 #include<fstream>
 #include<chrono>
+#include<iomanip>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include<opencv2/core/core.hpp>
 
-#include<System.h>
+#include"System.h"
 
 using namespace std;
 
-void LoadImages(const string &strImagePath, const string &strPathTimes,
-                vector<string> &vstrImages, vector<double> &vTimeStamps);
+void LoadImages(const string &strSequence, vector<string> &vstrImageFilenames,
+                vector<double> &vTimestamps);
 
 int main(int argc, char **argv)
 {
-    if(argc != 5)
+    if(argc != 4)
     {
-        cerr << endl << "Usage: ./mono_tum path_to_vocabulary path_to_settings path_to_image_folder path_to_times_file" << endl;
+        cerr << endl << "Usage: ./mono_kitti path_to_vocabulary path_to_settings path_to_sequence" << endl;
         return 1;
     }
 
     // Retrieve paths to images
     vector<string> vstrImageFilenames;
     vector<double> vTimestamps;
-    LoadImages(string(argv[3]), string(argv[4]), vstrImageFilenames, vTimestamps);
+    LoadImages(string(argv[3]), vstrImageFilenames, vTimestamps);
 
     int nImages = vstrImageFilenames.size();
-
-    if(nImages<=0)
-    {
-        cerr << "ERROR: Failed to load images" << endl;
-        return 1;
-    }
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM2::System SLAM(argv[1],argv[2],ORB_SLAM2::System::MONOCULAR,true);
@@ -78,8 +73,7 @@ int main(int argc, char **argv)
 
         if(im.empty())
         {
-            cerr << endl << "Failed to load image at: "
-                 <<  vstrImageFilenames[ni] << endl;
+            cerr << endl << "Failed to load image at: " << vstrImageFilenames[ni] << endl;
             return 1;
         }
 
@@ -90,7 +84,6 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
-        std::cout << "Main loop ni: " << ni << std::endl;
         SLAM.TrackMonocularKeyframeInitialization(im,tframe,vstrImageFilenames[ni]);
 
 #ifdef COMPILEDWITHC11
@@ -123,7 +116,6 @@ int main(int argc, char **argv)
     // Stop all threads
     SLAM.Shutdown();
 
-
     // // Tracking time statistics
     // sort(vTimesTrack.begin(),vTimesTrack.end());
     // float totaltime = 0;
@@ -136,18 +128,16 @@ int main(int argc, char **argv)
     // cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // // Save camera trajectory
-    // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");    
 
     return 0;
 }
 
-void LoadImages(const string &strImagePath, const string &strPathTimes,
-                vector<string> &vstrImages, vector<double> &vTimeStamps)
+void LoadImages(const string &strPathToSequence, vector<string> &vstrImageFilenames, vector<double> &vTimestamps)
 {
     ifstream fTimes;
-    fTimes.open(strPathTimes.c_str());
-    vTimeStamps.reserve(5000);
-    vstrImages.reserve(5000);
+    string strPathTimeFile = strPathToSequence + "/times.txt";
+    fTimes.open(strPathTimeFile.c_str());
     while(!fTimes.eof())
     {
         string s;
@@ -156,11 +146,21 @@ void LoadImages(const string &strImagePath, const string &strPathTimes,
         {
             stringstream ss;
             ss << s;
-            vstrImages.push_back(strImagePath + "/" + ss.str() + ".png");
             double t;
             ss >> t;
-            vTimeStamps.push_back(t/1e9);
-
+            vTimestamps.push_back(t);
         }
+    }
+
+    string strPrefixLeft = strPathToSequence + "/image_0/";
+
+    const int nTimes = vTimestamps.size();
+    vstrImageFilenames.resize(nTimes);
+
+    for(int i=0; i<nTimes; i++)
+    {
+        stringstream ss;
+        ss << setfill('0') << setw(6) << i;
+        vstrImageFilenames[i] = strPrefixLeft + ss.str() + ".png";
     }
 }

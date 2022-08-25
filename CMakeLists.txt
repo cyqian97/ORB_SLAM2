@@ -107,11 +107,15 @@ add_executable(mono_kitti
 Examples/Monocular/mono_kitti.cc)
 target_link_libraries(mono_kitti ${PROJECT_NAME})
 
+add_executable(mono_kitti_ki
+Examples/Monocular/mono_kitti_ki.cc)
+target_link_libraries(mono_kitti_ki ${PROJECT_NAME})
+
 add_executable(mono_euroc
 Examples/Monocular/mono_euroc.cc)
 target_link_libraries(mono_euroc ${PROJECT_NAME})
 
 add_executable(mono_euroc_ki
-Examples/Monocular/mono_euroc_KeyframeInitialization.cc)
+Examples/Monocular/mono_euroc_ki.cc)
 target_link_libraries(mono_euroc_ki ${PROJECT_NAME})
 

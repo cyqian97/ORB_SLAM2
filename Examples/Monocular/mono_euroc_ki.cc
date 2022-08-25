@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
-
 #include<opencv2/core/core.hpp>
 
 #include<System.h>
@@ -41,16 +40,15 @@ void LoadImages(const string &strImagePath,
 
 int main(int argc, char **argv)
 {
-    if(argc != 5)
+    if(argc != 4)
     {
-        cerr << endl << "Usage: ./mono_tum path_to_vocabulary path_to_settings path_to_image_folder path_to_times_file" << endl;
+        cerr << endl << "Usage: ./mono_euroc_ki path_to_vocabulary path_to_settings path_to_image_folder" << endl;
         return 1;
     }
 
     // Retrieve paths to images
     vector<string> vstrImageFilenames;
     vector<double> vTimestamps;
-    // LoadImages(string(argv[3]), string(argv[4]), vstrImageFilenames, vTimestamps);
     LoadImages(string(argv[3]), vstrImageFilenames, vTimestamps);
 
     int nImages = vstrImageFilenames.size();
@@ -94,7 +92,8 @@ int main(int argc, char **argv)
 #endif
 
         // Pass the image to the SLAM system
-        SLAM.TrackMonocular(im,tframe);
+        std::cout << "Main loop ni: " << ni << std::endl;
+        SLAM.TrackMonocularKeyframeInitialization(im,tframe,vstrImageFilenames[ni]);
 
 #ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -117,22 +116,29 @@ int main(int argc, char **argv)
             usleep((T-ttrack)*1e6);
     }
 
+
+    // Keyframe pairs from initialization only.
+    ofstream file("Keyframe-Pairs.txt");
+    file << SLAM.write_KeyframeInitialization();
+    file.close();
+
     // Stop all threads
     SLAM.Shutdown();
 
-    // Tracking time statistics
-    sort(vTimesTrack.begin(),vTimesTrack.end());
-    float totaltime = 0;
-    for(int ni=0; ni<nImages; ni++)
-    {
-        totaltime+=vTimesTrack[ni];
-    }
-    cout << "-------" << endl << endl;
-    cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
-    cout << "mean tracking time: " << totaltime/nImages << endl;
 
-    // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
+    // // Tracking time statistics
+    // sort(vTimesTrack.begin(),vTimesTrack.end());
+    // float totaltime = 0;
+    // for(int ni=0; ni<nImages; ni++)
+    // {
+    //     totaltime+=vTimesTrack[ni];
+    // }
+    // cout << "-------" << endl << endl;
+    // cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
+    // cout << "mean tracking time: " << totaltime/nImages << endl;
+
+    // // Save camera trajectory
+    // SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
 
     return 0;
 }
@@ -159,13 +165,28 @@ void LoadImages(const string &strImagePath, const string &strPathTimes,
 
         }
     }
+    cout << "done!!!!!!!!!!!" << endl;
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir (strImagePath.c_str())) != NULL) {
+        /* print all the files and directories within directory */
+        while ((ent = readdir (dir)) != NULL) {
+            printf ("%s\n", ent->d_name);
+        }
+        closedir (dir);
+    } else {
+        /* could not open directory */
+        perror ("");
+        // return EXIT_FAILURE;
+    }
 }
+
 
 // Since EuRoC type dataset has the timestamps in the file name, a timestamp file is actually not necessary
 void LoadImages(const string &strImagePath,
                 vector<string> &vstrImages, vector<double> &vTimeStamps)
 {
-    // cout << "Start loading images" << endl;
+    cout << "Start loading images" << endl;
     cout << strImagePath << endl;
     DIR *dir;
     struct dirent *ent;
